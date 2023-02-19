@@ -1,6 +1,6 @@
 use bevy::{
-    prelude::{Component, App, Query, Commands, AssetServer, Res, Camera2dBundle, Transform, Vec3, Quat}, 
-    DefaultPlugins, sprite::SpriteBundle, time::Time
+    prelude::{Component, App, Query, Commands, AssetServer, Res, Camera2dBundle, Transform, Vec3, Quat, Vec2, Color}, 
+    DefaultPlugins, sprite::{SpriteBundle, Sprite}, time::Time, text::{Text2dBundle, Text, TextStyle}
 };
 use std::{fmt, f32::consts::PI};
 use rand::Rng;
@@ -18,7 +18,7 @@ fn spawn_plane(commands: &mut Commands, asset_server: &Res<AssetServer>, Positio
                 translation: Vec3 {
                     x,
                     y,
-                    z: 0.
+                    ..Vec3::default()
                 },
                 rotation: Quat::from_rotation_z(-heading*PI/180.)
             },
@@ -33,6 +33,51 @@ fn spawn_plane(commands: &mut Commands, asset_server: &Res<AssetServer>, Positio
             x, 
             y
         }));
+    let runway_number: i32 = (heading/10.).floor() as i32;
+    commands.spawn(
+        Text2dBundle {
+            text: Text::from_section(
+                format!("{runway_number}"),
+                TextStyle {
+                    color: Color::WHITE,
+                    ..TextStyle::default()
+                }
+            ),
+            transform: Transform {
+                rotation: Quat::from_rotation_z(-heading*PI/180.),
+                translation: Vec3 {
+                    x,
+                    y,
+                    ..Vec3::default()
+                },
+                ..Transform::default()
+            },
+            ..Text2dBundle::default()
+        }
+    );
+}
+
+fn spawn_runway(commands: &mut Commands, Position { x, y }: Position, length: f32, heading: f32) {
+    commands.spawn((
+        SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgb(0.18, 0.18, 0.18),
+                custom_size: Some(Vec2::new(20.0, length)),
+                ..Sprite::default()
+            },
+            transform: Transform {
+                rotation: Quat::from_rotation_z(-heading*PI/180.),
+                translation: Vec3 {
+                    x,
+                    y,
+                    ..Vec3::default()
+                },
+                ..Transform::default()
+            },
+            ..SpriteBundle::default()
+        },
+        Runway)
+    );
 }
 
 #[derive(Component)]
@@ -65,6 +110,9 @@ struct Plane;
 #[derive(Component)]
 struct GroundStation;
 
+#[derive(Component)]
+struct Runway;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -84,6 +132,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     for _ in 0..10 {
         random_plane();
     }
+
+    spawn_runway(&mut commands, Position { x: 20., y: 40. }, 270., 90.);
 
     commands.spawn((
         SpriteBundle {
